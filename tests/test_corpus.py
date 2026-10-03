@@ -1,4 +1,4 @@
-"""The whole corpus (112,826 chords of BPSD, Winterreise, DCML's Mozart sonatas and When in Rome)
+"""The whole corpus (115,349 chords of BPSD, Winterreise, DCML's Mozart sonatas and When in Rome)
 against baseline.json.gz, the outcome of the research prototype for every chord.
 
 The sources are downloaded into $FORMAT_CONVERTERS_CACHE (default ~/.cache/format-converters) on the
@@ -38,12 +38,12 @@ def test_no_source_has_more_none_than_the_baseline(corpus):
 
 def test_the_function_rule_stores_the_function_of_what_the_prototype_found_parses(corpus):
     assert corpus["function"]["dcml"] >= 1595
-    assert corpus["function"]["cad64"] >= 1210
+    assert corpus["function"]["cad64"] >= 1260
 
 
 def test_source_ids_are_the_baseline_ones(corpus):
     assert set(corpus["counts"]) == set(corpus["baseline"])
-    assert sum(sum(c.values()) for c in corpus["counts"].values()) == 112826
+    assert sum(sum(c.values()) for c in corpus["counts"].values()) == 115349
 
 
 def test_counts_line_per_source_id(corpus):
