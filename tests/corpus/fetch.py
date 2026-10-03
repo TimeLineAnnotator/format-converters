@@ -7,6 +7,7 @@ by HTTP range requests, so only the needed members are transferred.
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import io
 import json
 import os
@@ -45,7 +46,18 @@ def _open(url: str, headers: dict | None = None, retries: int = 4):
     raise last
 
 
+def _have(path: Path) -> bool:
+    """A cached file counts only if it has content: an interrupted or failed download can leave an empty one."""
+    return path.exists() and path.stat().st_size > 0
+
+
+def md5_of(path: Path) -> str:
+    return hashlib.md5(path.read_bytes()).hexdigest()
+
+
 def _write(path: Path, data: bytes) -> None:
+    if not data:
+        raise OSError(f"empty download for {path.name}")
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".part")
     tmp.write_bytes(data)
@@ -101,7 +113,7 @@ def fetch_zip_members(source: str, cache: Path, only: int | None = None) -> int:
             if info.is_dir() or not fnmatch.fnmatch(info.filename, pattern):
                 continue
             target = cache / source / kind / info.filename.rsplit("/", 1)[1]
-            if not target.exists():
+            if not _have(target):
                 _write(target, zf.read(info))
             n += 1
             if only and n >= only:
@@ -113,7 +125,7 @@ def fetch_dcml(cache: Path, only: int | None = None) -> int:
     n = 0
     for name in names("dcml")[:only]:
         target = cache / "dcml" / name
-        if not target.exists():
+        if not _have(target):
             with _open(SOURCES["dcml"]["url"] + urllib.parse.quote(name)) as r:
                 _write(target, r.read())
         n += 1
@@ -124,7 +136,7 @@ def fetch_wir(cache: Path, only: int | None = None) -> int:
     n = 0
     for i, path in enumerate(names("wir")[:only]):
         target = cache / "wir" / wir_fid(i)
-        if not target.exists():
+        if not _have(target):
             with _open(SOURCES["wir"]["url"] + urllib.parse.quote(path)) as r:
                 _write(target, r.read())
         n += 1
@@ -151,8 +163,10 @@ def seed_wir_parse(src: Path, cache: Path | None = None) -> None:
     for fid, v in json.loads(parsed.read_text()).items():
         i = names("wir").index(v["path"])
         target = cache / "wir_parsed" / (wir_fid(i)[:-4] + ".json")
-        if not target.exists() and v["status"] == "ok":
-            _write(target, json.dumps({"music21": music21.__version__, "chords": v["chords"]}).encode())
+        text = cache / "wir" / wir_fid(i)
+        if not target.exists() and v["status"] == "ok" and _have(text):
+            _write(target, json.dumps({"music21": music21.__version__, "source_md5": md5_of(text),
+                                       "chords": v["chords"]}).encode())
 
 
 def seed(src: Path, cache: Path | None = None) -> None:
@@ -165,11 +179,11 @@ def seed(src: Path, cache: Path | None = None) -> None:
     }
     for old, new in layout.items():
         for f in sorted((src / old).glob("*.csv")):
-            if not (cache / new / f.name).exists():
+            if _have(f) and not _have(cache / new / f.name):
                 (cache / new).mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, cache / new / f.name)
     for name in names("dcml"):
-        if (src / "dcml" / name).exists() and not (cache / "dcml" / name).exists():
+        if _have(src / "dcml" / name) and not _have(cache / "dcml" / name):
             (cache / "dcml").mkdir(parents=True, exist_ok=True)
             shutil.copy2(src / "dcml" / name, cache / "dcml" / name)
     index = src / "wir" / "index.tsv"
@@ -177,7 +191,7 @@ def seed(src: Path, cache: Path | None = None) -> None:
         for line in index.read_text().splitlines():
             fid, path = line.split("\t")
             i = names("wir").index(path)
-            if (src / "wir" / fid).exists() and not (cache / "wir" / wir_fid(i)).exists():
+            if _have(src / "wir" / fid) and not _have(cache / "wir" / wir_fid(i)):
                 (cache / "wir").mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src / "wir" / fid, cache / "wir" / wir_fid(i))
     seed_wir_parse(src, cache)

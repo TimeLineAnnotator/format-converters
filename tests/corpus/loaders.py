@@ -102,22 +102,24 @@ def _parse_task(args):
     chords = _parse_romantext(src)
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_name(dst.name + ".part")
-    tmp.write_text(json.dumps({"music21": music21.__version__, "chords": chords}))
+    tmp.write_text(json.dumps({"music21": music21.__version__, "source_md5": fetch.md5_of(Path(src)),
+                               "chords": chords}))
     tmp.replace(dst)
 
 
 def parsed_wir(cache: Path, workers: int = 1) -> dict[str, list[dict]]:
-    """path -> music21's chords. Parses a file only if the cache lacks it for this music21 version
-    (about 9 minutes for all 277 files on 8 processes)."""
+    """path -> music21's chords. Parses a file only if the cache lacks a parse of this exact file
+    (its md5) by this music21 version (about 9 minutes for all 277 files on 8 processes)."""
     import music21
 
     paths = fetch.names("wir")
     todo, out = [], {}
     for i, path in enumerate(paths):
         cached = cache / "wir_parsed" / (fetch.wir_fid(i)[:-4] + ".json")
-        if cached.exists():
+        text = cache / "wir" / fetch.wir_fid(i)
+        if cached.exists() and text.exists():
             data = json.loads(cached.read_text())
-            if data["music21"] == music21.__version__:
+            if data["music21"] == music21.__version__ and data.get("source_md5") == fetch.md5_of(text):
                 out[path] = data["chords"]
                 continue
         todo.append((str(cache / "wir" / fetch.wir_fid(i)), cached))
