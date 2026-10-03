@@ -151,3 +151,21 @@ None of them is stored in this repository, and the repository holds no chord lab
 | [MarkGotham/When-in-Rome](https://github.com/MarkGotham/When-in-Rome) at a pinned commit | RomanText analyses of Winterreise, the Mozart sonatas and Beethoven's first movements | CC BY-SA 4.0 (see that repository for the licence of each analysis) |
 
 The non-commercial and share-alike terms apply to the downloaded files, not to this code.
+
+## Dezrann (`format_converters.dez`)
+
+Reads [Dezrann](https://www.dezrann.net) `.dez` analyses and turns their labels into rows for TiLiA's CSV import by measure.
+
+```python
+from format_converters.dez import read_dez, to_tilia_rows
+
+labels = read_dez("K279-1_texture.dez")                  # list[DezLabel], in file order
+rows = to_tilia_rows(labels, "K279-1.mm.json", "range")  # "hierarchy", "marker" or "range"
+```
+
+- `DezLabel` has `type`, `tag` (`""` if absent), `start` and `duration` (`Fraction`, quarter notes, 0 if absent), `line`, `comment` and `raw`.
+- Positions are quarter notes from the start of the score, as written (repeats are not unfolded). The measure map (`*.mm.json`, a path or the parsed list) turns them into a bar `number` plus a fraction of that bar, rounded to 6 decimals. A position outside the map is a `ValueError` naming the label.
+- A label's end is `start + duration`; an end exactly on a measure's start is written as the end of the measure before it (`(n, 1.0)`). An end past the last bar (a few labels of the release do this) is written as the end of the last bar.
+- `hierarchy`: the labels passed nest by containment; `level` is 1 for a label containing no other, else 1 + the highest level inside it. Labels with identical spans share a level. When the labels sit on several display lines of one stem (`bot.1`, `bot.2`), a label's level is at least the rank of its line, so a section with no sub-section in the file (a Development) is still above the sub-sections. Pass the labels of one type.
+- `marker` has one row at each label's start; `range` uses the label's type as `row`. One row per label, in order.
+- `tests/test_dez.py` runs on a K279-1 fixture (see `tests/fixtures/dez/NOTICE`); set `DEZRANN_MOZART` to the unzipped Mozart release to convert all of its files.
