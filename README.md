@@ -134,7 +134,7 @@ chord that ends lower than the baseline (the function rule aside), and on a sour
 
 The sources are pinned (`tests/corpus/sources.json`, `dcml_files.txt` and `wir_paths.txt` hold only URLs, commits, file names and paths). They are downloaded
 into `$FORMAT_CONVERTERS_CACHE` (default `~/.cache/format-converters`) on the first run, about 5 MB: the two Zenodo zips are read by HTTP range requests, only the needed members.
-music21's parse of the 277 RomanText files takes about 9 minutes on 8 processes the first time; it is cached per file in the same directory, for the installed music21 version.
+music21's parse of the 277 RomanText files takes about 9 minutes on 8 processes the first time; it is cached per file in the same directory, for the file's md5 and the installed music21 version. An empty cached file counts as missing and is downloaded again.
 `FORMAT_CONVERTERS_WORKERS` sets the number of processes (default: up to 4). To fill a cache from an earlier download, call `tests/corpus/fetch.py: seed(directory)`.
 
 `scripts/harmony_report.py` prints one line per source id, such as `bpsd rn=10971 letter=218 approx=0 none=0 no_chord=0`, then the prototype's counts, and how many chords were stored as their function.
