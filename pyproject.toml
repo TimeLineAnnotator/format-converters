@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "format-converters"
+version = "0.1.0"
+description = "Converters from annotation formats to rows that TiLiA can import"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "music21>=9",
+    "TiLiA @ git+https://github.com/TimeLineAnnotator/desktop@eb605f720847cf86f47834e71bc5bd9f8e0cd606",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[dependency-groups]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
