@@ -66,10 +66,11 @@ def _tilia_key_name(tonic: str, minor: bool) -> str:
 
 
 def _checked_key(fifths: int, minor: bool) -> str:
-    """TiLiA key text for a tonic on the line of fifths. A tonic with more than one accidental, or a
-    key with more than seven in its signature, is respelled enharmonically (F## -> G)."""
+    """TiLiA key text for a tonic on the line of fifths, spelled as written (C# major stays C#, not D-flat).
+    A tonic with more than one accidental, or a key with more than seven in its signature, is respelled
+    enharmonically (F## -> G, D# major -> E-flat)."""
     shift = 3 if minor else 0  # the signature of a minor key is three fifths below its tonic's
-    for f in sorted((fifths, fifths - 12, fifths + 12), key=lambda f: abs(f - shift)):
+    for f in (fifths, *sorted((fifths - 12, fifths + 12), key=lambda f: abs(f - shift))):
         text = _tilia_key_name(name_from_fifths(f), minor)
         if len(text) <= 2 and abs(f - shift) <= 7 and parse_key(text) is not None:
             return text
