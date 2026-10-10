@@ -8,6 +8,7 @@ import pytest
 from tilia.timelines.harmony.components.harmony import get_params_from_text as tilia_chord
 from tilia.timelines.harmony.components.mode import get_params_from_text as tilia_mode
 
+from format_converters import _harte
 from format_converters._tilia import parse_chord, pcs_from_params
 from format_converters.harmony import ChordResult, translate_chord, translate_key
 
@@ -61,6 +62,26 @@ def test_harte_interval_bass_is_the_same_chord_as_note_name_bass():
 def test_harte_interval_bass_is_named_from_the_root(label, key, symbol):
     # E#, Cb and Fb are not in the tables of flat and sharp names; the interval names them from the root
     assert translate_chord(label, "harte", key).symbol == symbol
+
+
+def test_harte_bass_outside_the_chord_sounds_with_it():
+    # as mir_eval reads Harte: D:maj/b7 is D-F#-A over C, a seventh chord in third inversion
+    assert _harte.pitch_classes("D:maj/b7") == (pcs("D", "F#", "A", "C"), pc("C"))
+    r = translate_chord("D:maj/b7", "harte", "C")
+    check(r, "letter", "D7/C", step=1, quality="dominant-seventh", inversion=3)
+    assert r.display_mode == "letter"
+    check(translate_chord("C:min/b7", "harte", "c"), "letter", "Cm7/Bb", key="c", inversion=3)
+    # a seventh over a pedal: no German sixth with the same four pitch classes and no G
+    r = translate_chord("D:7/G", "harte", "C")
+    check(r, "approx", "D7sus/G")
+    assert pcs_from_params(r.params)[1] == pc("G")
+
+
+def test_harte_foreign_bass_that_no_symbol_keeps_is_left_out_of_the_approximation():
+    r = translate_chord("C:maj/#4", "harte", "C")
+    check(r, "approx", "C", step=0, quality="major", inversion=0)
+    assert r.display_mode == "custom" and r.custom_text == "C:maj/#4"
+    assert r.comments == "the bass left out: TiLiA stores C"
 
 
 def test_harte_root_is_kept_when_another_root_has_the_same_pitch_classes():
