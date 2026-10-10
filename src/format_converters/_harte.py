@@ -32,8 +32,10 @@ def is_no_chord(label: str) -> bool:
     return label.strip() in NO_CHORD
 
 
-def pitch_classes(label: str) -> tuple[frozenset[int], int]:
-    """'C:(3,5,b7)/E', 'C:min7/G' or 'C:min7/5' -> (pitch classes, bass pitch class)."""
+def pitch_classes(label: str, bass_sounds: bool = True) -> tuple[frozenset[int], int]:
+    """'C:(3,5,b7)/E', 'C:min7/G' or 'C:min7/5' -> (pitch classes, bass pitch class).
+    A bass outside the chord sounds with it, as mir_eval reads Harte labels: 'D:maj/b7' is D-F#-A-C.
+    bass_sounds=False leaves it out: the chord as written before the slash."""
     label = label.strip()
     root_s, colon, rest = label.partition(":")
     if not colon:  # a bare root, possibly with a bass: 'C', 'C/E'
@@ -70,6 +72,8 @@ def pitch_classes(label: str) -> tuple[frozenset[int], int]:
         bass = note_pc(bass_s)
     else:
         bass = (root + degree_pc(bass_s)) % 12
+    if bass_sounds:
+        pcs.add(bass)
     return frozenset(pcs), bass
 
 
