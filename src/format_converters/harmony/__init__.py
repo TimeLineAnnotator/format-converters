@@ -7,6 +7,7 @@ parser reads back as the source's exact pitch classes and bass, and says how goo
 """
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import re
 from collections.abc import Iterable, Iterator
@@ -308,10 +309,20 @@ def translate_chord(
             return ChordResult("none", None, None, "", f"not a Harte label: {label!r}")
         spell = _harte.spelling(label)
         root = _harte.root_pc(label)
-        plan = _Plan(rn=[], function=[], spell=spell, root=root, approx=_drop_tones(truth, spell, sharps, root),
+        try:
+            written, _ = _harte.pitch_classes(label, bass_sounds=False)
+        except (ValueError, KeyError):  # a truth given for a label that is no Harte label
+            written = truth[0]
+        # last, the chord without a bass from outside it
+        unslashed = list(letter_figures(written, root, spell, sharps, root)) if written != truth[0] else []
+        plan = _Plan(rn=[], function=[], spell=spell, root=root,
+                     approx=itertools.chain(_drop_tones(truth, spell, sharps, root), unslashed),
                      approx_note="one or two tones other than the bass dropped: TiLiA stores {symbol}",
                      letter_display="letter")
-        return _search(label, k, truth, plan, sharps)
+        result = _search(label, k, truth, plan, sharps)
+        if result.outcome == "approx" and result.symbol in unslashed:
+            result = dataclasses.replace(result, comments=f"the bass left out: TiLiA stores {result.symbol}")
+        return result
 
     if standard == "dcml":
         if label in ("", "@none"):
