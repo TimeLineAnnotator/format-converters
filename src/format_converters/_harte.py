@@ -16,6 +16,7 @@ _SHORTHAND = {
 }
 _DEGREE = {1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 0, 9: 2, 10: 4, 11: 5, 12: 7, 13: 9}
 _NOTE = re.compile(r"[A-Ga-g][#b]*$")
+_LETTERS = "CDEFGAB"
 
 
 def degree_pc(degree: str) -> int:
@@ -72,16 +73,32 @@ def pitch_classes(label: str) -> tuple[frozenset[int], int]:
     return frozenset(pcs), bass
 
 
+def interval_name(root: str, degree: str) -> str | None:
+    """The note a Harte interval names above a root: 'C#' and '3' -> 'E#', 'Db' and 'b3' -> 'Fb'.
+    None past a double sharp or flat."""
+    m = re.fullmatch(r"([#b]*)(\d+)", degree.strip())
+    if not m or int(m.group(2)) not in _DEGREE:
+        raise ValueError(f"not a Harte interval: {degree!r}")
+    letter = _LETTERS[(_LETTERS.index(root[0].upper()) + int(m.group(2)) - 1) % 7]
+    alter = (note_pc(root) + degree_pc(degree) - NATURAL_PC[letter] + 6) % 12 - 6
+    return letter + ("#" * alter if alter > 0 else "b" * -alter) if abs(alter) <= 2 else None
+
+
 def spelling(label: str) -> dict[int, str]:
-    """Pitch class -> note name for the root and a note-name bass, as the label spells them."""
+    """Pitch class -> note name for the root and the bass, as the label spells them. A bass given as an
+    interval ('C#:maj/3') is named from the root: E#, not F."""
     root, _, rest = label.strip().partition(":")
     root, _, bass_inline = root.partition("/")
     spell = {}
     if root and root[0] in NATURAL_PC:
         spell[note_pc(root)] = root
-    bass = rest.partition("/")[2] or bass_inline
+    bass = (rest.partition("/")[2] or bass_inline).strip()
     if bass and bass[0] in NATURAL_PC and _NOTE.match(bass):
         spell[note_pc(bass)] = bass
+    elif bass and root and root[0] in NATURAL_PC:
+        name = interval_name(root, bass)
+        if name:
+            spell[note_pc(name)] = name
     return spell
 
 

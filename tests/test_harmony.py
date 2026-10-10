@@ -52,6 +52,17 @@ def test_harte_interval_bass_is_the_same_chord_as_note_name_bass():
     assert translate_chord("C:min7/Eb", "harte", "C") == flat_third
 
 
+@pytest.mark.parametrize("label, key, symbol", [
+    ("C#:maj/3", "E", "C#/E#"),
+    ("C#:7/3", "E", "C#7/E#"),
+    ("Ab:min6/b3", "E-", "Abm6/Cb"),
+    ("Db:min/b3", "E", "Dbm/Fb"),
+])
+def test_harte_interval_bass_is_named_from_the_root(label, key, symbol):
+    # E#, Cb and Fb are not in the tables of flat and sharp names; the interval names them from the root
+    assert translate_chord(label, "harte", key).symbol == symbol
+
+
 def test_harte_root_is_kept_when_another_root_has_the_same_pitch_classes():
     check(translate_chord("A:min7", "harte", "C"), "letter", "Am7", step=5, quality="minor-seventh")
     check(translate_chord("Ab:7", "harte", "C"), "letter", "Ab7", step=5, accidental=-1,
@@ -98,6 +109,18 @@ def test_harte_without_a_third_or_with_a_foreign_bass_is_none_or_approx_and_has_
     ("f#", "romantext", "f#"),
     ("B-", "romantext", "B-"),
     ("b-", "romantext", "b-"),
+    # spelled as written within seven sharps or flats
+    ("C#:maj", "harte", "C#"),
+    ("A#:min", "harte", "a#"),
+    ("Cb:maj", "harte", "C-"),
+    ("Ab:min", "harte", "a-"),
+    ("Gb:maj", "harte", "G-"),
+    ("D#:min", "harte", "d#"),
+    # respelled past seven
+    ("D#:maj", "harte", "E-"),
+    ("Fb:maj", "harte", "E"),
+    ("A#:maj", "harte", "B-"),
+    ("Db:min", "harte", "c#"),
 ])
 def test_translate_key_global_keys(label, standard, text):
     assert translate_key(label, standard) == text
@@ -122,6 +145,8 @@ def test_harte_keys_make_tilias_key_parser_raise():
     ("VII", "c", "B-"),    # natural minor: a minor seventh above the tonic
     ("#iv", "F#", "c"),    # B# minor is written as C minor
     ("bII", "F#", "G"),
+    ("VI", "E", "C#"),     # seven sharps, as written
+    ("III", "E", "A-"),    # G# major would have eight
 ])
 def test_translate_key_dcml_local_keys_are_relative_to_the_global_key(label, globalkey, text):
     assert translate_key(label, "dcml", globalkey=globalkey) == text
