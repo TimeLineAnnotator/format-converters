@@ -52,6 +52,17 @@ def test_harte_interval_bass_is_the_same_chord_as_note_name_bass():
     assert translate_chord("C:min7/Eb", "harte", "C") == flat_third
 
 
+@pytest.mark.parametrize("label, key, symbol", [
+    ("C#:maj/3", "E", "C#/E#"),
+    ("C#:7/3", "E", "C#7/E#"),
+    ("Ab:min6/b3", "E-", "Abm6/Cb"),
+    ("Db:min/b3", "E", "Dbm/Fb"),
+])
+def test_harte_interval_bass_is_named_from_the_root(label, key, symbol):
+    # E#, Cb and Fb are not in the tables of flat and sharp names; the interval names them from the root
+    assert translate_chord(label, "harte", key).symbol == symbol
+
+
 def test_harte_root_is_kept_when_another_root_has_the_same_pitch_classes():
     check(translate_chord("A:min7", "harte", "C"), "letter", "Am7", step=5, quality="minor-seventh")
     check(translate_chord("Ab:7", "harte", "C"), "letter", "Ab7", step=5, accidental=-1,
