@@ -82,6 +82,10 @@ def test_harte_foreign_bass_that_no_symbol_keeps_is_left_out_of_the_approximatio
     check(r, "approx", "C", step=0, quality="major", inversion=0)
     assert r.display_mode == "custom" and r.custom_text == "C:maj/#4"
     assert r.comments == "the bass left out: TiLiA stores C"
+    # Ebpower (Eb-Bb) would keep two tones but is written without the bass
+    r = translate_chord("A:dim/Bb", "harte", "C")
+    check(r, "approx", "Adim")
+    assert r.comments == "the bass left out: TiLiA stores Adim"
 
 
 def test_harte_root_is_kept_when_another_root_has_the_same_pitch_classes():

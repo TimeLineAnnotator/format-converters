@@ -221,12 +221,18 @@ def _romantext_truth(label: str, key: music21.key.Key) -> Truth | None:
 
 
 # ------------------------------------------------------------------ the search
+_FIGURE_ROOT = re.compile(r"[A-G][#b]*")
+
+
 def _drop_tones(truth: Truth, spell: dict[int, str], sharps: bool, root: int | None) -> Iterator[str]:
     """Letter symbols for a Harte chord with one or two non-bass tones removed."""
     pcs, bass = truth
     for drop in (1, 2):
         for removed in itertools.combinations(sorted(pcs - {bass}), drop):
-            yield from letter_figures(frozenset(pcs - set(removed)), bass, spell, sharps, root)
+            for fig in letter_figures(frozenset(pcs - set(removed)), bass, spell, sharps, root):
+                # a power chord or an augmented sixth is written without the bass: keep it only on its own bass
+                if "/" in fig or note_pc(_FIGURE_ROOT.match(fig).group()) == bass:
+                    yield fig
 
 
 def _root_pc(params: dict) -> int:
