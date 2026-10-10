@@ -1,0 +1,25 @@
+{
+  "bpsd": {
+    "url": "https://zenodo.org/records/12783403/files/Beethoven_Piano_Sonata_Dataset_v2.zip?download=1",
+    "members": {"ann_score_chord": "*/2_Annotations/ann_score_chord/*.csv"},
+    "licence": "CC BY 3.0"
+  },
+  "swd": {
+    "url": "https://zenodo.org/records/10839767/files/Schubert_Winterreise_Dataset_v2-1.zip?download=1",
+    "members": {
+      "ann_score_chord": "02_Annotations/ann_score_chord/*.csv",
+      "ann_audio_chord": "02_Annotations/ann_audio_chord/*.csv"
+    },
+    "licence": "CC BY 3.0"
+  },
+  "dcml": {
+    "url": "https://raw.githubusercontent.com/DCMLab/mozart_piano_sonatas/5337257a5318711e6302cfe85c3f1a6ade3c6271/harmonies/",
+    "files": "dcml_files.txt",
+    "licence": "CC BY-NC-SA 4.0"
+  },
+  "wir": {
+    "url": "https://raw.githubusercontent.com/MarkGotham/When-in-Rome/1c61fe41b8c2910296d7d2bcbf6476c7c1f2fe35/",
+    "files": "wir_paths.txt",
+    "licence": "CC BY-SA 4.0 (the corpus; see its repository for the analyses)"
+  }
+}
