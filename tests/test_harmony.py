@@ -98,6 +98,18 @@ def test_harte_without_a_third_or_with_a_foreign_bass_is_none_or_approx_and_has_
     ("f#", "romantext", "f#"),
     ("B-", "romantext", "B-"),
     ("b-", "romantext", "b-"),
+    # spelled as written within seven sharps or flats
+    ("C#:maj", "harte", "C#"),
+    ("A#:min", "harte", "a#"),
+    ("Cb:maj", "harte", "C-"),
+    ("Ab:min", "harte", "a-"),
+    ("Gb:maj", "harte", "G-"),
+    ("D#:min", "harte", "d#"),
+    # respelled past seven
+    ("D#:maj", "harte", "E-"),
+    ("Fb:maj", "harte", "E"),
+    ("A#:maj", "harte", "B-"),
+    ("Db:min", "harte", "c#"),
 ])
 def test_translate_key_global_keys(label, standard, text):
     assert translate_key(label, standard) == text
@@ -122,6 +134,8 @@ def test_harte_keys_make_tilias_key_parser_raise():
     ("VII", "c", "B-"),    # natural minor: a minor seventh above the tonic
     ("#iv", "F#", "c"),    # B# minor is written as C minor
     ("bII", "F#", "G"),
+    ("VI", "E", "C#"),     # seven sharps, as written
+    ("III", "E", "A-"),    # G# major would have eight
 ])
 def test_translate_key_dcml_local_keys_are_relative_to_the_global_key(label, globalkey, text):
     assert translate_key(label, "dcml", globalkey=globalkey) == text
