@@ -56,6 +56,8 @@ KINDS = {
 }
 # kinds whose bass TiLiA fixes: a "/bass" after them is not written
 _NO_SLASH = ("Italian", "German", "French", "Tristan", "power")
+_AUGMENTED_SIXTHS = ("Italian", "German", "French")
+_OTHER_KINDS = [k for k in KINDS if k not in _AUGMENTED_SIXTHS]
 
 
 def _names(pc: int, spell: dict[int, str], sharps: bool, bass: bool = False) -> list[str]:
@@ -76,14 +78,20 @@ def letter_figures(
     spell: dict[int, str] | None = None,
     sharps: bool = False,
     root: int | None = None,
+    sixth: str | None = None,
 ) -> Iterator[str]:
     """Letter symbols (Cm7/G) for the pitch classes, over every chord kind of music21.
     spell: pitch class -> preferred spelled name ('Bb', 'F#'), from the source.
-    root: the pitch class to try as the chord's root first (Harte names it)."""
+    root: the pitch class to try as the chord's root first (Harte names it).
+    sixth: the augmented sixth the source names ('German'), tried first on every root. Without it none
+    is offered: a German sixth has the notes of a dominant seventh, and only the label tells them apart."""
     spell = spell or {}
     roots = sorted(sorted(pcs), key=lambda pc: pc != root)
-    for root in roots:
-        for kind, (semis, abbr) in KINDS.items():
+    candidates = [(r, [sixth]) for r in roots] if sixth else []
+    candidates += [(r, _OTHER_KINDS) for r in roots]
+    for root, kinds in candidates:
+        for kind in kinds:
+            semis, abbr = KINDS[kind]
             if {(root + s) % 12 for s in semis} != set(pcs):
                 continue
             for rname in _names(root, spell, sharps):

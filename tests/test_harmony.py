@@ -9,7 +9,7 @@ from tilia.timelines.harmony.components.harmony import get_params_from_text as t
 from tilia.timelines.harmony.components.mode import get_params_from_text as tilia_mode
 
 from format_converters import _harte
-from format_converters._tilia import parse_chord, pcs_from_params
+from format_converters._tilia import parse_chord, pcs_from_params, root_pc
 from format_converters.harmony import ChordResult, translate_chord, translate_key
 
 
@@ -430,3 +430,52 @@ def test_key_may_be_a_music21_key():
 def test_unknown_standard_is_an_error():
     with pytest.raises(ValueError):
         translate_chord("V", "nashville", "C")
+
+
+# ---------------------------------------------------------------- augmented sixths
+TWELVE_KEYS = ("C", "D-", "D", "E-", "E", "F", "F#", "G", "A-", "A", "B-", "B")
+
+
+@pytest.mark.parametrize("key", TWELVE_KEYS)
+@pytest.mark.parametrize("label, above_bass, quality", [
+    ("Gr+6", (0, 4, 7, 10), "German"),
+    ("It+6", (0, 4, 10), "Italian"),
+    ("Fr+6", (0, 4, 6, 10), "French"),
+])
+def test_a_named_augmented_sixth_is_stored_as_itself_in_every_key(key, label, above_bass, quality):
+    # the flat sixth degree is the bass; a German sixth in B- has the notes of G-7, and G- sorts first
+    bass = (music21.key.Key(key).tonic.pitchClass + 8) % 12
+    truth = (frozenset((bass + s) % 12 for s in above_bass), bass)
+    r = translate_chord(label, "bps-fh", key, truth)
+    assert r.outcome == "letter" and r.params["quality"] == quality, r
+    assert (root_pc(r.params) + 8) % 12 == bass
+    assert r.display_mode == "custom" and r.custom_text == label
+
+
+def test_a_dcml_german_sixth_is_stored_as_itself_where_the_lowest_root_is_a_dominant_seventh():
+    r = translate_chord("Ger6", "dcml", "B-", (pcs("G-", "B-", "D-", "E"), pc("G-")))
+    assert r.params["quality"] == "German" and r.custom_text == "Ger6"
+
+
+@pytest.mark.parametrize("key", TWELVE_KEYS)
+def test_a_dominant_seventh_is_never_stored_as_an_augmented_sixth(key):
+    root = (music21.key.Key(key).tonic.pitchClass + 7) % 12
+    chord = frozenset((root + s) % 12 for s in (0, 4, 7, 10))
+    for bass, standard, label in ((root, "bps-fh", "V7"), (root, "dcml", "V7"), ((root + 10) % 12, "bps-fh", "V42")):
+        r = translate_chord(label, standard, key, (chord, bass))
+        assert r.params["quality"] == "dominant-seventh", (label, r)
+
+
+def test_harte_chords_are_never_stored_as_augmented_sixths():
+    # dim(b13) has the notes of a dominant seventh a third below; Harte has no augmented sixths
+    for label in ("Bb:dim(b13)", "B:7", "D#:7"):
+        r = translate_chord(label, "harte", "C")
+        assert r.params["quality"] not in ("German", "French", "Italian"), (label, r)
+
+
+def test_an_augmented_sixth_over_another_bass_is_not_stored_as_one():
+    # TiLiA's German has its bass by quality: over F# only a letter symbol with that bass keeps the chord
+    truth = (pcs("A-", "C", "E-", "F#"), pc("F#"))
+    r = translate_chord("Gr+6", "bps-fh", "c", truth)
+    assert r.params["quality"] != "German"
+    assert pcs_from_params(r.params) == truth
