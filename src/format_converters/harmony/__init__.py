@@ -17,14 +17,13 @@ import music21
 
 from .. import _harte
 from .._spelling import (
-    NATURAL_PC,
     fifths_from_name,
     letter_figures,
     minor_variants,
     name_from_fifths,
     note_pc,
 )
-from .._tilia import as_key, matches, parse_chord, parse_key
+from .._tilia import as_key, matches, parse_chord, parse_key, root_pc
 
 STANDARDS = ("harte", "bps-fh", "dcml", "romantext")
 Truth = tuple[frozenset[int], int]
@@ -139,9 +138,18 @@ class _Plan:
     approx_note: str = "TiLiA stores {symbol}, which is not the sounding chord"
     letters: bool = True
     letter_display: str = "custom"
+    sixth: str | None = None  # the augmented sixth the label names ("German")
 
 
 _BPS_REPLACEMENTS = (("Gr+6", "Ger6"), ("It+6", "It6"), ("Fr+6", "Fr6"))
+_NAMED_SIXTH = re.compile(r"^(Gr\+|Ger|It|Fr)")
+_SIXTH_KIND = {"Gr+": "German", "Ger": "German", "It": "Italian", "Fr": "French"}
+
+
+def _named_sixth(label: str) -> str | None:
+    """The augmented sixth a Roman-numeral label names, as music21 calls the kind."""
+    m = _NAMED_SIXTH.match(label)
+    return _SIXTH_KIND[m.group()] if m else None
 
 
 def _bps_figures(label: str) -> list[str]:
@@ -188,7 +196,7 @@ def _dcml_plan(label: str) -> _Plan | None:
         figures = minor_variants(fig)
         function = figures if m["changes"] is not None else []
         note = f"changes ({label}) stored as their function {{symbol}}" if function else ""
-        return _Plan(rn=[], function=function, function_note=note, approx=figures)
+        return _Plan(rn=[], function=function, function_note=note, approx=figures, sixth=_named_sixth(label))
     return None
 
 
@@ -207,7 +215,7 @@ def _romantext_plan(label: str) -> _Plan:
         function = minor_variants(_BRACKET.sub("", label))
         note = f"suspensions, additions or omissions ({label}) stored as their function {{symbol}}"
     return _Plan(rn=minor_variants(rn), function=function, function_note=note,
-                 approx=minor_variants(_BRACKET.sub("", rn)) if "[" in rn else ())
+                 approx=minor_variants(_BRACKET.sub("", rn)) if "[" in rn else (), sixth=_named_sixth(label))
 
 
 # ------------------------------------------------------------------ truth
@@ -235,16 +243,12 @@ def _drop_tones(truth: Truth, spell: dict[int, str], sharps: bool, root: int | N
                     yield fig
 
 
-def _root_pc(params: dict) -> int:
-    return (NATURAL_PC["CDEFGAB"[params["step"]]] + params["accidental"]) % 12
-
-
 def _first_function(figures: list[str], key: music21.key.Key, truth: Truth | None):
     """The first spelling of the function that TiLiA parses; one rooted in the sounding chord first."""
     parsed = [(f, parse_chord(f, key)) for f in figures]
     parsed = [(f, p) for f, p in parsed if p is not None]
     for f, p in parsed:
-        if truth is not None and _root_pc(p) in truth[0]:
+        if truth is not None and root_pc(p) in truth[0]:
             return f, p
     return parsed[0] if parsed else (None, None)
 
@@ -270,7 +274,7 @@ def _search(label: str, key: music21.key.Key, truth: Truth | None, plan: _Plan, 
         if matches(params, truth):
             return _result("rn", fig, params, label, plan)
     if truth is not None and plan.letters:
-        for fig in letter_figures(truth[0], truth[1], plan.spell, sharps, plan.root):
+        for fig in letter_figures(truth[0], truth[1], plan.spell, sharps, plan.root, plan.sixth):
             params = parse_chord(fig, key)
             if matches(params, truth):
                 return _result("letter", fig, params, label, plan)
@@ -343,7 +347,7 @@ def translate_chord(
             return _no_chord(label)
         if truth is None:
             raise ValueError("BPS-FH chords need truth=(pitch classes, bass pitch class)")
-        return _search(label, k, truth, _Plan(rn=_bps_figures(label), function=[]), sharps)
+        return _search(label, k, truth, _Plan(rn=_bps_figures(label), function=[], sixth=_named_sixth(label)), sharps)
 
     # romantext
     if not label:

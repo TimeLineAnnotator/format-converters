@@ -8,11 +8,15 @@ from tilia.timelines.harmony.components.harmony import get_params_from_text as _
 from tilia.timelines.harmony.components.mode import get_params_from_text as _mode_params
 from tilia.ui.timelines.harmony.constants import INT_TO_NOTE_NAME, QUALITY_TO_ABBREVIATION
 
+from ._spelling import NATURAL_PC
+
 # accidentals TiLiA's validator accepts, as the text a chord name takes
 ACC = {0: "", 1: "#", -1: "-", 2: "##", -2: "--"}
 
-# TiLiA stores these without a root of their own: the bass is fixed by the quality
+# TiLiA stores these without a root of their own: the bass is fixed by the quality,
+# a minor sixth above the stored note (C German is Ab-C-Eb-F#)
 FIXED_BASS_QUALITIES = ("Italian", "German", "French")
+_FIXED_BASS_ABOVE_ROOT = 8
 
 
 def key_text(key: str | music21.key.Key) -> str:
@@ -65,14 +69,21 @@ def pcs_from_params(params: dict) -> tuple[frozenset[int], int]:
     return _pcs(params["step"], params["accidental"], params["quality"], params["inversion"])
 
 
+def root_pc(params: dict) -> int:
+    """Pitch class of the stored root."""
+    return (NATURAL_PC["CDEFGAB"[params["step"]]] + params["accidental"]) % 12
+
+
 def matches(params: dict | None, truth: tuple[frozenset[int], int] | None) -> bool:
-    """Do the stored params sound the truth? Italian, German and French need equal pitch classes only."""
+    """Do the stored params sound the truth: the same pitch classes over the same bass?"""
     if params is None or truth is None:
         return False
     pcs, bass = pcs_from_params(params)
     if pcs != truth[0]:
         return False
-    return bass == truth[1] or params["quality"] in FIXED_BASS_QUALITIES
+    if params["quality"] in FIXED_BASS_QUALITIES:  # what music21 renders as their bass is not it
+        bass = (root_pc(params) + _FIXED_BASS_ABOVE_ROOT) % 12
+    return bass == truth[1]
 
 
 def parse_key(text: str) -> dict | None:
