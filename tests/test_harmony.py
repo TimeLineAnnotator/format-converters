@@ -473,6 +473,20 @@ def test_harte_chords_are_never_stored_as_augmented_sixths():
         assert r.params["quality"] not in ("German", "French", "Italian"), (label, r)
 
 
+@pytest.mark.parametrize("label, key, names, bass", [
+    ("It64", "D", ("B-", "D", "G#"), "D"),
+    ("It53", "g", ("E-", "G", "C#"), "C#"),
+])
+def test_an_inverted_italian_sixth_keeps_its_notes_as_an_approximation(label, key, names, bass):
+    # no other chord kind has these three notes, and TiLiA fixes the bass of an Italian sixth
+    truth = (pcs(*names), pc(bass))
+    r = translate_chord(label, "romantext", key, truth)
+    assert r.outcome == "approx"
+    assert r.params["quality"] == "Italian"
+    assert pcs_from_params(r.params)[0] == truth[0]
+    assert r.custom_text == label
+
+
 def test_an_augmented_sixth_over_another_bass_is_not_stored_as_one():
     # TiLiA's German has its bass by quality: over F# only a letter symbol with that bass keeps the chord
     truth = (pcs("A-", "C", "E-", "F#"), pc("F#"))

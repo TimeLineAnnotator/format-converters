@@ -23,7 +23,7 @@ from .._spelling import (
     name_from_fifths,
     note_pc,
 )
-from .._tilia import as_key, matches, parse_chord, parse_key, root_pc
+from .._tilia import as_key, matches, parse_chord, parse_key, pcs_from_params, root_pc
 
 STANDARDS = ("harte", "bps-fh", "dcml", "romantext")
 Truth = tuple[frozenset[int], int]
@@ -278,6 +278,12 @@ def _search(label: str, key: music21.key.Key, truth: Truth | None, plan: _Plan, 
             params = parse_chord(fig, key)
             if matches(params, truth):
                 return _result("letter", fig, params, label, plan)
+    # an inverted Italian sixth (It64) has no letter symbol: TiLiA fixes its bass, so only the notes can stay
+    if truth is not None and plan.letters and plan.sixth:
+        for fig in letter_figures(truth[0], truth[1], plan.spell, sharps, plan.root, plan.sixth):
+            params = parse_chord(fig, key)
+            if params is not None and params["quality"] == plan.sixth and pcs_from_params(params)[0] == truth[0]:
+                return _result("approx", fig, params, label, plan, f"the inversion left out: TiLiA stores {fig}")
     for fig in plan.approx:
         params = parse_chord(fig, key)
         if params is not None:

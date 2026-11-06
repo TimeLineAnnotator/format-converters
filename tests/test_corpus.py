@@ -30,6 +30,13 @@ def test_no_chord_is_worse_than_the_prototype(corpus):
     assert not corpus["worse"][:10], corpus["worse"][:10]
 
 
+def test_every_correction_of_the_baseline_is_what_the_chord_gets(corpus):
+    # a correction that no longer holds would loosen the comparison for no reason
+    for correction in run.corrections():
+        for sid, refs in correction["refs"].items():
+            assert {corpus["by_ref"][sid][r] for r in refs} == {correction["outcome"]}, correction["reason"]
+
+
 def test_no_source_has_more_none_than_the_baseline(corpus):
     for sid, refs in corpus["baseline"].items():
         base_none = sum(v.rstrip("*") == "none" for v in refs.values())
