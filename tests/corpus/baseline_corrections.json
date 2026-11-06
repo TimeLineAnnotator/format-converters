@@ -1,0 +1,44 @@
+[
+ {
+  "outcome": "approx",
+  "reason": "An Italian sixth off its fixed bass. The prototype's check ignored the bass of augmented sixths and counted these as exact; the symbol is the same, but the bass is not the source's.",
+  "refs": {
+   "wir-mozart-analysis": [
+    "Corpus/Piano_Sonatas/Mozart,_Wolfgang_Amadeus/K576/1/analysis.txt:181"
+   ],
+   "wir-winterreise-analysis": [
+    "Corpus/OpenScore-LiederCorpus/Schubert,_Franz/Winterreise,_D.911/20_Der_Wegweiser/analysis.txt:130"
+   ]
+  }
+ },
+ {
+  "outcome": "approx",
+  "reason": "The source's extended column has no fifth (A#:(3,b7)) under the short label A#:7. The prototype stored those notes as an Italian sixth on another root, which is not the chord; the seventh chord of the short label adds the fifth. The SWD converter reads the short label, which is exact.",
+  "refs": {
+   "swd-performances": [
+    "Schubert_D911-01_AL98.csv:24",
+    "Schubert_D911-01_AL98.csv:80",
+    "Schubert_D911-01_FI55.csv:24",
+    "Schubert_D911-01_FI55.csv:80",
+    "Schubert_D911-01_FI66.csv:24",
+    "Schubert_D911-01_FI66.csv:80",
+    "Schubert_D911-01_FI80.csv:24",
+    "Schubert_D911-01_FI80.csv:80",
+    "Schubert_D911-01_HU33.csv:24",
+    "Schubert_D911-01_HU33.csv:80",
+    "Schubert_D911-01_OL06.csv:24",
+    "Schubert_D911-01_OL06.csv:80",
+    "Schubert_D911-01_QU98.csv:24",
+    "Schubert_D911-01_QU98.csv:80",
+    "Schubert_D911-01_SC06.csv:24",
+    "Schubert_D911-01_SC06.csv:80",
+    "Schubert_D911-01_TR99.csv:24",
+    "Schubert_D911-01_TR99.csv:80"
+   ],
+   "swd-score": [
+    "Schubert_D911-01.csv:24",
+    "Schubert_D911-01.csv:80"
+   ]
+  }
+ }
+]

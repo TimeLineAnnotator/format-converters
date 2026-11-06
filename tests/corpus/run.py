@@ -19,10 +19,23 @@ def workers() -> int:
     return int(os.environ.get("FORMAT_CONVERTERS_WORKERS", min(4, os.cpu_count() or 1)))
 
 
+def corrections() -> list[dict]:
+    """Where the prototype was wrong, with the reason: baseline.json.gz stays the record of what it did."""
+    return json.loads((HERE / "baseline_corrections.json").read_text(encoding="utf-8"))
+
+
 def baseline() -> dict[str, dict[str, str]]:
-    """source id -> {ref: prototype outcome, "*" appended where the function rule applies}."""
+    """source id -> {ref: expected outcome, "*" appended where the function rule applies}:
+    the prototype's outcome for every chord, with the corrections applied."""
     with gzip.open(HERE / "baseline.json.gz", "rt") as f:
-        return json.load(f)
+        base = json.load(f)
+    for correction in corrections():
+        for sid, refs in correction["refs"].items():
+            for ref in refs:
+                if ref not in base[sid]:
+                    raise KeyError(f"a correction for a chord the baseline does not have: {sid} {ref}")
+                base[sid][ref] = correction["outcome"]
+    return base
 
 
 def _translate(sig):
