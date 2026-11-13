@@ -8,8 +8,8 @@ on:
 env:
   QT_QPA_PLATFORM: offscreen
   FORMAT_CONVERTERS_CACHE: ${{ github.workspace }}/.corpus-cache
-  # the commit of TiLiA v0.7.0 that pyproject.toml pins ("@v0.7.0" would install 0.6.2: a branch of that name shadows the tag)
-  TILIA_COMMIT: eb605f720847cf86f47834e71bc5bd9f8e0cd606
+  # the TiLiA release that pyproject.toml pins by its tag
+  TILIA_VERSION: "0.7.5"
 
 jobs:
   unit:
@@ -33,7 +33,7 @@ jobs:
       - run: pip install -e . pytest
       - name: TiLiA is the pinned version
         run: |
-          pip show TiLiA | grep -q '^Version: 0.7.0$'
+          pip show TiLiA | grep -qx "Version: $TILIA_VERSION"
       - name: Tests (the corpus test has its own job)
         run: pytest -q --ignore=tests/test_corpus.py
 
@@ -59,7 +59,7 @@ jobs:
       - run: pip install -e . pytest
       - name: TiLiA is the pinned version
         run: |
-          pip show TiLiA | grep -q '^Version: 0.7.0$'
+          pip show TiLiA | grep -qx "Version: $TILIA_VERSION"
       # the downloaded sources and music21's parse of the RomanText files (about 9 minutes on 8 processes);
       # keyed on the pinned source lists
       - uses: actions/cache@v4
