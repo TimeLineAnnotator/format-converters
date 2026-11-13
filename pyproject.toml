@@ -11,7 +11,7 @@ license = { text = "MIT" }
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "music21>=9",
-    "TiLiA @ git+https://github.com/TimeLineAnnotator/desktop@eb605f720847cf86f47834e71bc5bd9f8e0cd606",
+    "TiLiA @ git+https://github.com/TimeLineAnnotator/desktop@v0.7.5",
 ]
 
 [project.optional-dependencies]

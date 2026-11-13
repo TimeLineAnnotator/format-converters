@@ -11,23 +11,25 @@ TiLiA's harmony CSV import turns a `symbol` text into a chord (step, accidental,
 applied degree) with its own parser. That parser silently stores a different chord for some labels, rejects many,
 and raises on a few:
 
-- Harte labels (`C:min7/G`) are rejected, and Harte keys (`F:min`) make the key parser raise.
+- Harte labels (`C:min7/G`) and Harte keys (`F:min`) are rejected.
 - BPS-FH's `-` (diminished) and `=` (half-diminished) are rejected or ignored; DCML's `%` is rejected.
 - `V42/bVII` raises; `#vii` in a minor key is read as double-raised.
 - Augmented sixths (`Ger6`, `It+6`) and the Neapolitan (`N6`) are rejected; TiLiA has them only as letter symbols and as `bII6`.
-- `A-7` means A minor seventh; `C7b9` is stored as `C7`; `Cm/D#` gets the wrong inversion; `I+M7` is stored as a seven-note chord.
+- `A-7` means A minor seventh; `Cm/D#` gets the wrong inversion; `I+M7` is stored as a seven-note chord.
 
 `translate_chord` searches for a symbol that TiLiA's parser reads back as exactly the source's pitch classes and
-bass, and reports how good the match is.
+bass, and reports how good the match is. A Harte chord is stored on the root its label names, never on another
+root, even where only another root has a symbol with exactly its notes (`C:(3,5,b7,b9)/E` is never `A#o9/E`): that
+symbol would name another chord and another degree.
 
 ## Install
 
 ```
-pip install -e .            # needs Python 3.10 to 3.12; installs music21 and TiLiA 0.7.0
+pip install -e .            # needs Python 3.10 to 3.12; installs music21 and TiLiA 0.7.5
 pip install -e . pytest     # to run the tests
 ```
 
-TiLiA is installed from the commit of v0.7.0 (`@v0.7.0` would install 0.6.2, because a branch of that name shadows the tag).
+TiLiA is installed from its tag v0.7.5, which has the added-tone qualities (`C7b9`, `Cmaj7#11`, `C6add9`).
 Importing TiLiA's constants loads PySide6; on a machine without a display set `QT_QPA_PLATFORM=offscreen`.
 
 ## API
@@ -94,7 +96,8 @@ ChordResult(outcome='approx', symbol='V/V', display_mode='custom', custom_text='
 - **letter**: a letter symbol that does the same. `display_mode` is `"letter"` for Harte; for the other standards it is `"custom"` with
   `custom_text` the source label, so the analyst's numeral stays visible.
 - **approx**: TiLiA accepts the symbol but it is not the sounding chord. `display_mode` is `"custom"`, `custom_text` the source label, and `comments` says why.
-  For Harte this is the chord with one or two tones other than the bass dropped.
+  For Harte, in this order: the chord on its root with one or two tones other than the root and the bass dropped; the
+  chord on its root without its bass; that chord with one or two tones dropped. The comment says which.
 - **none**: nothing TiLiA accepts; `symbol` is `None`. A converter puts such labels on a marker timeline.
 - **no_chord**: Harte `N` or `X`, DCML `@none` or an empty label.
 

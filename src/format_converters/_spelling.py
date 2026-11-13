@@ -6,6 +6,8 @@ import re
 from collections.abc import Iterator
 
 import music21
+from tilia.timelines.harmony.constants import ADDED_TONE_QUALITIES, CADENTIAL_SIX_FOUR
+from tilia.ui.timelines.harmony.constants import QUALITY_TO_ABBREVIATION
 
 LINE_OF_FIFTHS = "FCGDAEB"
 NATURAL_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
@@ -54,6 +56,21 @@ KINDS = {
     for k, v in music21.harmony.CHORD_TYPES.items()
     if k not in _NOT_CHORDS
 }
+
+
+def _tone_semitones(tone: str) -> int:
+    """An added tone as TiLiA spells it from the root ("b9", "#11", "13") -> semitones above the root."""
+    n = int(tone.lstrip("#b"))
+    return (_DEGREE_SEMITONES[n] + tone.count("#") - tone.count("b")) % 12
+
+
+# TiLiA's own qualities: a kind of music21's plus one added tone (C7b9, C6add9). The cadential six-four is
+# left out: it has the notes of a major triad, and the translators store it as its function.
+KINDS |= {
+    quality: ([*KINDS[base][0], _tone_semitones(tone)], QUALITY_TO_ABBREVIATION[quality])
+    for quality, (base, tone) in ADDED_TONE_QUALITIES.items()
+    if quality != CADENTIAL_SIX_FOUR
+}
 # kinds whose bass TiLiA fixes: a "/bass" after them is not written
 _NO_SLASH = ("Italian", "German", "French", "Tristan", "power")
 _AUGMENTED_SIXTHS = ("Italian", "German", "French")
@@ -79,14 +96,16 @@ def letter_figures(
     sharps: bool = False,
     root: int | None = None,
     sixth: str | None = None,
+    only_root: bool = False,
 ) -> Iterator[str]:
     """Letter symbols (Cm7/G) for the pitch classes, over every chord kind of music21.
     spell: pitch class -> preferred spelled name ('Bb', 'F#'), from the source.
     root: the pitch class to try as the chord's root first (Harte names it).
     sixth: the augmented sixth the source names ('German'), tried first on every root. Without it none
-    is offered: a German sixth has the notes of a dominant seventh, and only the label tells them apart."""
+    is offered: a German sixth has the notes of a dominant seventh, and only the label tells them apart.
+    only_root: offer symbols on `root` alone, never on another of the chord's notes (C7b9 is never A#o9/E)."""
     spell = spell or {}
-    roots = sorted(sorted(pcs), key=lambda pc: pc != root)
+    roots = [root] if only_root and root is not None else sorted(sorted(pcs), key=lambda pc: pc != root)
     candidates = [(r, [sixth]) for r in roots] if sixth else []
     candidates += [(r, _OTHER_KINDS) for r in roots]
     for root, kinds in candidates:

@@ -40,5 +40,53 @@
     "Schubert_D911-01.csv:80"
    ]
   }
+ },
+ {
+  "outcome": "none",
+  "reason": "A diminished chord with a flat ninth (F#:(3,b5,b9)/C) has an exact symbol only on another root. A chord is never stored on another root (TimeLineAnnotator/project-management#263): that symbol names another chord and another degree. On its own root TiLiA has no symbol for these notes, with the bass or without it, so the chord goes on the marker timeline with its label.",
+  "refs": {
+   "swd-performances": [
+    "Schubert_D911-05_AL98.csv:49",
+    "Schubert_D911-05_AL98.csv:56",
+    "Schubert_D911-05_FI55.csv:49",
+    "Schubert_D911-05_FI55.csv:56",
+    "Schubert_D911-05_FI66.csv:49",
+    "Schubert_D911-05_FI66.csv:56",
+    "Schubert_D911-05_FI80.csv:49",
+    "Schubert_D911-05_FI80.csv:56",
+    "Schubert_D911-05_HU33.csv:49",
+    "Schubert_D911-05_HU33.csv:56",
+    "Schubert_D911-05_OL06.csv:49",
+    "Schubert_D911-05_OL06.csv:56",
+    "Schubert_D911-05_QU98.csv:49",
+    "Schubert_D911-05_QU98.csv:56",
+    "Schubert_D911-05_SC06.csv:49",
+    "Schubert_D911-05_SC06.csv:56",
+    "Schubert_D911-05_TR99.csv:49",
+    "Schubert_D911-05_TR99.csv:56"
+   ],
+   "swd-score": [
+    "Schubert_D911-05.csv:49",
+    "Schubert_D911-05.csv:56"
+   ]
+  }
+ },
+ {
+  "outcome": "approx",
+  "reason": "A symmetric chord (a diminished seventh, a seventh with a flat fifth) whose bass is a chord tone spelled with another letter (F:dim7/D, where D is the E double flat). The prototype stored it on the bass's root (Do7), which is another chord; on its own root, TiLiA finds the inversion by the bass's letter and cannot keep that bass, so the chord is stored without it.",
+  "refs": {
+   "swd-performances": [
+    "Schubert_D911-13_QU98.csv:30",
+    "Schubert_D911-13_QU98.csv:32",
+    "Schubert_D911-13_QU98.csv:74",
+    "Schubert_D911-13_QU98.csv:76",
+    "Schubert_D911-13_SC06.csv:30",
+    "Schubert_D911-13_SC06.csv:32",
+    "Schubert_D911-13_SC06.csv:74",
+    "Schubert_D911-13_SC06.csv:76",
+    "Schubert_D911-20_QU98.csv:1",
+    "Schubert_D911-20_QU98.csv:2"
+   ]
+  }
  }
 ]

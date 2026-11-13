@@ -154,9 +154,8 @@ def test_translate_key_global_keys(label, standard, text):
     assert ok and params["step"] == "CDEFGAB".index(k.tonic.step) and params["type"] == k.mode
 
 
-def test_harte_keys_make_tilias_key_parser_raise():
-    with pytest.raises(Exception):  # noqa: B017 TiLiA returns None and the caller unpacks it
-        tilia_mode("F:min")
+def test_harte_keys_are_rejected_by_tilias_key_parser():
+    assert tilia_mode("F:min") == (False, None)
     assert tilia_mode(translate_key("F:min", "harte"))[0]
 
 
@@ -324,16 +323,51 @@ def test_flat_after_a_note_name_is_written_b_never_minus():
         assert sym is None or "-" not in sym, sym
 
 
-def test_altered_tones_that_tilia_drops_are_not_stored_as_exact():
-    dropped = raw("C7b9")
-    assert dropped["quality"] == "dominant-seventh"  # the b9 is gone
+def test_tilias_added_tone_qualities_are_exact_on_their_own_root():
+    assert raw("C7b9")["quality"] == "dominant-seventh-flat-ninth"
     truth = (pcs("C", "E", "G", "B-", "D-"), pc("C"))
     r = translate_chord("C:7(b9)", "harte", "C")
-    assert r.symbol != "C7b9"
-    if r.outcome == "letter":
-        assert pcs_from_params(r.params) == truth
-    else:
-        assert r.outcome in ("approx", "none")
+    check(r, "letter", "C7b9", quality="dominant-seventh-flat-ninth")
+    assert pcs_from_params(r.params) == truth
+    r = translate_chord("C:(3,5,b7,b9)/E", "harte", "f")
+    check(r, "letter", "C7b9/E", inversion=1, quality="dominant-seventh-flat-ninth")
+
+
+@pytest.mark.parametrize("label, key, symbol", [
+    ("A:7(b13)", "D", "A7b13"),
+    ("A:7(9,#11)", "D", "A9#11"),
+    ("C:maj7(6)", "C", "Cmaj7add6"),
+])
+def test_other_added_tone_qualities_are_exact_too(label, key, symbol):
+    r = translate_chord(label, "harte", key)
+    assert (r.outcome, r.symbol) == ("letter", symbol)
+
+
+def test_an_approximation_that_drops_tones_is_stored_on_the_bass():
+    r = translate_chord("D:(3,5,b7,b9)/Bb", "harte", "g")  # D7b13/A# would be read with bass A
+    assert r.outcome == "approx" and r.symbol != "D7b13/A#"
+    assert pcs_from_params(r.params)[1] == pc("B-") and root_pc(r.params) == pc("D")
+
+
+@pytest.mark.parametrize("label, key, symbol, comments", [
+    ("F:dim7/D", "C", "Fo7", "the bass left out: TiLiA stores Fo7"),  # Do7 has these notes, on D
+    ("B:(3,5,b9)/C", "C", "B", "the bass and one or two other tones left out: TiLiA stores B"),
+])
+def test_the_last_approximation_is_the_chord_on_its_root_without_its_bass(label, key, symbol, comments):
+    r = translate_chord(label, "harte", key)
+    assert (r.outcome, r.symbol, r.comments) == ("approx", symbol, comments)
+
+
+@pytest.mark.parametrize("label, key", [
+    ("D:(3,5,b7,b9)/Bb", "g"),   # the notes of Bb+M11: an augmented major eleventh on B-flat
+    ("B:dim7/C", "e"),            # Bob9/C stays: its root is B
+    ("G:7(#5)", "C"),
+    ("C:min(b6)", "c"),
+])
+def test_a_harte_chord_is_never_stored_on_another_root(label, key):
+    r = translate_chord(label, "harte", key)
+    assert r.outcome in ("letter", "approx"), r
+    assert root_pc(r.params) == pc(label.split(":")[0].replace("b", "-")), (r.symbol, r.comments)
 
 
 def test_sharp_bass_is_written_flat_because_tilia_misreads_it():
