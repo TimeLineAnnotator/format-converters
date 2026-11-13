@@ -138,6 +138,7 @@ class _Plan:
     approx_note: str = "TiLiA stores {symbol}, which is not the sounding chord"
     letters: bool = True
     letter_display: str = "custom"
+    only_root: bool = False  # letter symbols on `root` alone (Harte names the root)
     sixth: str | None = None  # the augmented sixth the label names ("German")
 
 
@@ -233,14 +234,22 @@ _FIGURE_ROOT = re.compile(r"[A-G][#b]*")
 
 
 def _drop_tones(truth: Truth, spell: dict[int, str], sharps: bool, root: int | None) -> Iterator[str]:
-    """Letter symbols for a Harte chord with one or two non-bass tones removed."""
+    """Letter symbols on the root for a Harte chord with one or two tones removed, never the root or the bass."""
     pcs, bass = truth
     for drop in (1, 2):
-        for removed in itertools.combinations(sorted(pcs - {bass}), drop):
-            for fig in letter_figures(frozenset(pcs - set(removed)), bass, spell, sharps, root):
+        for removed in itertools.combinations(sorted(pcs - {bass, root}), drop):
+            for fig in letter_figures(frozenset(pcs - set(removed)), bass, spell, sharps, root, only_root=True):
                 # a power chord or an augmented sixth is written without the bass: keep it only on its own bass
                 if "/" in fig or note_pc(_FIGURE_ROOT.match(fig).group()) == bass:
                     yield fig
+
+
+def _keeping_bass(figures: Iterable[str], key: music21.key.Key, bass: int) -> Iterator[str]:
+    """The figures that TiLiA stores on the given bass: it misreads some slashes ("D7b13/A#" has bass A)."""
+    for fig in figures:
+        params = parse_chord(fig, key)
+        if params is not None and pcs_from_params(params)[1] == bass:
+            yield fig
 
 
 def _first_function(figures: list[str], key: music21.key.Key, truth: Truth | None):
@@ -274,7 +283,7 @@ def _search(label: str, key: music21.key.Key, truth: Truth | None, plan: _Plan, 
         if matches(params, truth):
             return _result("rn", fig, params, label, plan)
     if truth is not None and plan.letters:
-        for fig in letter_figures(truth[0], truth[1], plan.spell, sharps, plan.root, plan.sixth):
+        for fig in letter_figures(truth[0], truth[1], plan.spell, sharps, plan.root, plan.sixth, plan.only_root):
             params = parse_chord(fig, key)
             if matches(params, truth):
                 return _result("letter", fig, params, label, plan)
@@ -329,15 +338,23 @@ def translate_chord(
             written, _ = _harte.pitch_classes(label, bass_sounds=False)
         except (ValueError, KeyError):  # a truth given for a label that is no Harte label
             written = truth[0]
-        # last, the chord without a bass from outside it
-        unslashed = list(letter_figures(written, root, spell, sharps, root)) if written != truth[0] else []
-        plan = _Plan(rn=[], function=[], spell=spell, root=root,
-                     approx=itertools.chain(_drop_tones(truth, spell, sharps, root), unslashed),
+        # never a symbol on another root, even an exact one: it would name another chord and another degree.
+        # Last, the chord on its root without its bass (whether the bass is a chord tone or not), then that
+        # with one or two tones dropped.
+        moved = root is not None and (written, root) != truth  # a truth given for a label with no root has none
+        unslashed = list(letter_figures(written, root, spell, sharps, root, only_root=True)) if moved else []
+        reduced = list(_drop_tones((written, root), spell, sharps, root)) if moved else []
+        plan = _Plan(rn=[], function=[], spell=spell, root=root, only_root=True,
+                     approx=itertools.chain(_keeping_bass(_drop_tones(truth, spell, sharps, root), k, truth[1]),
+                                            unslashed, reduced),
                      approx_note="one or two tones other than the bass dropped: TiLiA stores {symbol}",
                      letter_display="letter")
         result = _search(label, k, truth, plan, sharps)
         if result.outcome == "approx" and result.symbol in unslashed:
             result = dataclasses.replace(result, comments=f"the bass left out: TiLiA stores {result.symbol}")
+        elif result.outcome == "approx" and result.symbol in reduced:
+            result = dataclasses.replace(
+                result, comments=f"the bass and one or two other tones left out: TiLiA stores {result.symbol}")
         return result
 
     if standard == "dcml":

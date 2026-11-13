@@ -6,7 +6,8 @@ from functools import lru_cache
 import music21
 from tilia.timelines.harmony.components.harmony import get_params_from_text as _harmony_params
 from tilia.timelines.harmony.components.mode import get_params_from_text as _mode_params
-from tilia.ui.timelines.harmony.constants import INT_TO_NOTE_NAME, QUALITY_TO_ABBREVIATION
+from tilia.timelines.harmony.constants import INT_TO_NOTE_NAME
+from tilia.ui.timelines.harmony.constants import QUALITY_TO_ABBREVIATION
 
 from ._spelling import NATURAL_PC
 
